@@ -17,17 +17,19 @@ url_dataspecialist = 'https://www.glassdoor.com/Job/united-states-data-specialis
 url_data_engineer = 'https://www.glassdoor.com/Job/united-states-data-engineer-jobs-SRCH_IL.0,13_IN1_KO14,27.htm'
 
 port_ = "mongodb://localhost:8585/"
-jobs_catalog = [url_scientist,
-                     url_bi_analyst,
-                     url_bi_engineer,
+# jobs_catalog = [url_scientist,
+#                      url_bi_analyst,
+#                      url_bi_engineer,
+#                      url_dataspecialist,
+#                      url_data_engineer]
+jobs_catalog = [url_bi_engineer,
                      url_dataspecialist,
                      url_data_engineer]
-
 async def run_main():
     for job_link in jobs_catalog:
         glassdoor_connect = CONNECTION(url=job_link)
         result = await glassdoor_connect.main()
-        print(result)
+        # print(result)
         processed = PREPROCESS.run_preprocess(crawed_raw_data=result)
        
         load_to_mongo_db(loaded_data=processed,port_link=port_)

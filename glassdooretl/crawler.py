@@ -46,7 +46,7 @@ class CONNECTION():
     industry_selector = 'section:nth-child(3) > div > div > div:nth-child(4) > div'
     sector_selector = 'section:nth-child(3) > div > div > div:nth-child(5) > div'
 
-    def __init__(self,url:str,search_limit:int = 3 ,driver_appear:bool = False) -> None:
+    def __init__(self,url:str,search_limit:int = 10 ,driver_appear:bool = False) -> None:
         self.url = url
         self.search_limit = search_limit
         options = webdriver.EdgeOptions()
@@ -56,7 +56,7 @@ class CONNECTION():
         self.driver.headless = driver_appear
         self.search_limit = search_limit
         self.stor_data = list()
-          
+        self.ignored = 0 
     def get_positio_amount(self):
         
         amount_descript = self.driver.find_element('/html/body/div[2]/div[1]/div[3]/div[2]/div[1]/div[1]/h1').text
@@ -85,7 +85,7 @@ class CONNECTION():
         trial = 0
 
         while not self.driver.find_elements(By.CSS_SELECTOR,self.company_all_sect) and trial <5 :
-
+            
             time.sleep(1)
             trial += 1
 
@@ -102,10 +102,12 @@ class CONNECTION():
                 stor_xpathtxt['avg_salary'] = self.validate_element(all_section,selector=self.salary_selector)         
                 stor_xpathtxt['size'] = self.validate_element(all_section,selector=self.size_selector)       
                 stor_xpathtxt['found_year'] = self.validate_element(all_section,selector=self.found_year_selector)       
-                stor_xpathtxt['industry'] = self.validate_element(all_section,selector=self.industry_selector)        
+                # stor_xpathtxt['industry'] = self.validate_element(all_section,selector=self.industry_selector)        
                 stor_xpathtxt['sector'] = self.validate_element(all_section,selector=self.sector_selector)   
                       
                 self.stor_data.append(stor_xpathtxt)
+            else:
+                self.ignored +=1
         else:
             
             pass
@@ -146,6 +148,7 @@ class CONNECTION():
 
         await task1
         await task2
+        print(self.ignored)
         
         return self.stor_data
         
