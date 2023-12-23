@@ -57,6 +57,7 @@ class CONNECTION():
         self.search_limit = search_limit
         self.stor_data = list()
         self.ignored = 0 
+        print('test')
     def get_positio_amount(self):
         
         amount_descript = self.driver.find_element('/html/body/div[2]/div[1]/div[3]/div[2]/div[1]/div[1]/h1').text
@@ -65,10 +66,10 @@ class CONNECTION():
         return self.search_limit
     
     def connect_glassdoor(self): 
-
+        
         self.driver.get(self.url)
     
-    def validate_element(self,parent_section_xpath,selector,defaule_val='-1'):
+    def validate_element(self,parent_section_xpath,selector,default_val='-1'):
         try:
     
             element = parent_section_xpath.find_element(By.CSS_SELECTOR,selector).get_attribute('innerText')      
@@ -77,33 +78,40 @@ class CONNECTION():
         except NoSuchElementException as e:
         
             print(f'{e}, default value -1 is given')
-            return defaule_val
+            return  default_val
         
     def retrieve_info(self):
         
         stor_xpathtxt = {}
         trial = 0
-
+        print('start retrieve')
         while not self.driver.find_elements(By.CSS_SELECTOR,self.company_all_sect) and trial <5 :
             
-            time.sleep(1)
             trial += 1
 
         if trial <5:
             ## only collect the company & position where location, position, rate, company name information are all provided
             if len(self.driver.find_element(By.XPATH,self.basicInfo_Xpath).text.split('\n'))==4:
+                loop = asyncio.get_event_loop()
+                
                 
                 stor_xpathtxt['position_info'] = self.driver.find_element(By.XPATH,self.basicInfo_Xpath).text
                 stor_xpathtxt['if_easy_apply'] = self.driver.find_element(By.XPATH,self.ifEasyApply_Xpath).text
             
                 comp_all_element = self.driver.find_elements(By.CSS_SELECTOR, self.company_all_sect)
                 all_section = comp_all_element[0]
-                stor_xpathtxt['jd'] = self.validate_element(all_section,selector=self.jd_selector)
-                stor_xpathtxt['avg_salary'] = self.validate_element(all_section,selector=self.salary_selector)         
-                stor_xpathtxt['size'] = self.validate_element(all_section,selector=self.size_selector)       
-                stor_xpathtxt['found_year'] = self.validate_element(all_section,selector=self.found_year_selector)       
-                # stor_xpathtxt['industry'] = self.validate_element(all_section,selector=self.industry_selector)        
-                stor_xpathtxt['sector'] = self.validate_element(all_section,selector=self.sector_selector)   
+                stor_xpathtxt['avg_salary'] = loop.run_in_executor(None, self.validate_element, all_section, self.salary_selector)
+                stor_xpathtxt['Size'] = loop.run_in_executor(None, self.validate_element, all_section, self.size_selector)
+                stor_xpathtxt['found_year'] = loop.run_in_executor(None, self.validate_element, all_section, self.found_year_selector)
+                stor_xpathtxt['sector'] = loop.run_in_executor(None, self.validate_element, all_section, self.sector_selector)
+                stor_xpathtxt['jd'] = loop.run_in_executor(None, self.validate_element, all_section, self.jd_selector)
+                
+                # stor_xpathtxt['jd'] = await self.validate_element(all_section,selector=self.jd_selector)
+                # stor_xpathtxt['avg_salary'] = await self.validate_element(all_section,selector=self.salary_selector)         
+                # stor_xpathtxt['size'] = await self.validate_element(all_section,selector=self.size_selector)       
+                # stor_xpathtxt['found_year'] = await self.validate_element(all_section,selector=self.found_year_selector)       
+                # # stor_xpathtxt['industry'] = self.validate_element(all_section,selector=self.industry_selector)        
+                # stor_xpathtxt['sector'] = await self.validate_element(all_section,selector=self.sector_selector)   
                       
                 self.stor_data.append(stor_xpathtxt)
             else:
@@ -113,12 +121,12 @@ class CONNECTION():
             pass
         
         
-    async def load_positions(self):
+    # async def load_positions(self):
+    def load_positions(self):
         
         for idx in range(0,int(self.search_limit)):   
            # load each selection .click()      
-            
-            position_sect = self.driver.find_element(By.XPATH, f'/html/body/div[2]/div[1]/div[3]/div[2]/div[1]/div[2]/ul/li[{idx+1}]')
+            position_sect =  self.driver.find_element(By.XPATH, f'/html/body/div[2]/div[1]/div[3]/div[2]/div[1]/div[2]/ul/li[{idx+1}]')
             self.driver.execute_script('arguments[0].click();',position_sect) 
 
             # close all possible pop up windows
@@ -131,30 +139,46 @@ class CONNECTION():
                 self.driver.find_element(By.XPATH,self.exist_close_envitation).click()
                 
             self.retrieve_info()
-     
-    async def click_next_turn(self):
+        return self.stor_data
+    
+    def click_next_turn(self):
         # CONNECTION.get_positio_amount()
         for nb_turn in range(math.floor(self.search_limit/30)): #one fold explores 30 more position
-            next_locator = self.driver.find_element(By.XPATH,self.show_more_job)
+            next_locator = self.driver.find_element(By.XPATH,self.show_more_job) 
             
             self.driver.execute_script('arguments[0].click();',next_locator)
             print('successfully click next job page')
 
-    async def main(self):
-        self.connect_glassdoor()
+    # async def run_crawler(self):
         
-        task1 = asyncio.create_task(self.click_next_turn())
-        task2 = asyncio.create_task(self.load_positions())
+    #     # task1 = asyncio.create_task(self.click_next_turn())
+    #     # task1 = asyncio.create_task(self.click_next_turn())
+    #     # task2 = asyncio.create_task(self.load_positions())
+    #     self.connect_glassdoor()
+    #     await self.load_positions()
+    #     # await task1
+    #     # await task2
+    #     # await asyncio.gather(task1, task2)
 
-        await task1
-        await task2
-        print(self.ignored)
         
-        return self.stor_data
+    #     return self.stor_data
         
     def direct_to_search(self): ## currently replaced by url
         pass
 
+# if __name__ =='__main__':
+#     bi_analyst = 'https://www.glassdoor.com/Job/united-states-business-intelligence-analyst-jobs-SRCH_IL.0,13_IN1_KO14,43.htm'    
+#     crawler = CONNECTION(url=bi_analyst)
+#     crawed_result = crawler.load_positions()
+    
+#     async def get_connection(bi_analyst):
+#         crawler = CONNECTION(url=bi_analyst)
+#         crawed_result = crawler.run_crawler()
+#         await asyncio.sleep(1)
+#         print('end')
+        
+#     async def main():
+#         await asyncio.gather()
 
 
 
